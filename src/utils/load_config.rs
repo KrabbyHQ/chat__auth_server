@@ -1,0 +1,406 @@
+use std::fmt;
+use crate::utils::{load_env::load_env};
+use anyhow::{Context, Result};
+use config::{Config, Environment, File};
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+pub struct AppSection {
+    pub name: String,   
+
+    // Commented out → optional
+    pub environment: Option<String>,
+    // pub log_level: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ClientIntegrationsSection {
+    #[serde(default)]
+    pub allow_access_middleware: bool,
+
+    #[serde(default)]
+    pub allow_sessions_middleware: bool,
+
+    #[serde(default)]
+    pub allow_logging_middleware: bool,
+
+    #[serde(default)]
+    pub allow_request_timeout_middleware: bool,
+
+    #[serde(default)]
+    pub allow_admin_routes_protector_middleware: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ObservabilitySection {
+    pub enable_tracing: bool,
+    pub enable_metrics: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ServerSection {
+    pub host: String,
+    pub port: u16,
+    pub request_timeout_secs: u64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DatabaseSection {
+    pub engine: String,
+    pub host: String,
+    pub port: u16,
+    pub user: Option<String>,
+    pub password: Option<String>,
+    pub name: String,
+    pub max_connections: u32,
+    pub connect_timeout_secs: u64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AuthSection {
+    pub jwt_secret: String,
+    pub jwt_access_expiration_time_in_hours: u64,
+    pub jwt_refresh_expiration_time_in_hours: u64,
+    pub jwt_one_time_password_lifetime_in_minutes: u64,
+}
+
+// #[derive(Debug, Deserialize)]
+// pub struct SecuritySection {
+//     pub bcrypt_cost: u32,
+//     pub rate_limit_per_minute: u32,
+// }
+
+#[derive(Debug, Deserialize)]
+pub struct AppConfig {
+    pub app: AppSection,
+    pub client_integrations: ClientIntegrationsSection,
+    pub observability: ObservabilitySection,
+
+    // Optional / currently commented-out sections
+    pub server: Option<ServerSection>,
+    pub database: Option<DatabaseSection>,
+    pub auth: Option<AuthSection>,
+    // pub security: Option<SecuritySection>,
+}
+
+pub fn load_config() -> Result<AppConfig> {
+    // Load .env file if present
+    load_env();
+
+    // Determine environment
+    let env = std::env::var("APP__ENV").context("APP__ENV environment variable is not set! Please set it to 'development', 'production', etc.")?;
+
+
+    // Build configuration
+    let builder = Config::builder()
+        // Base config is required
+        .add_source(File::with_name("config/base").required(true))
+        // Environment-specific overrides (optional)
+        .add_source(File::with_name(&format!("config/{}", env)).required(true))
+        // Local overrides (optional, for dev machines)
+        .add_source(File::with_name("config/local").required(false))
+        // Environment variable overrides
+        .add_source(
+            Environment::default()
+                .separator("__") // maps APP__SECTION__FIELD → section.field
+                .prefix("APP")  // all vars must start with APP__
+                .try_parsing(true), // parse numbers/booleans automatically
+        );
+
+    /**************** EXPLAINING THE MAPPING RULE FOR THE [ABOVE] FINAL ENV OVERRIDES ****************
+    # Mapping Rule (exact)
+
+    APP__<SECTION>__<FIELD>=value - E.g. APP__SERVER__PORT=9000
+
+    Lowercase / uppercase differences are normalized(handled without manual intervention).
+
+    So this TOML:
+
+    [server]
+    port = 8080
+
+    will be overridden by:
+
+    APP__SERVER__PORT=9000
+
+    If the names don’t align, nothing happens.
+
+    Example (❌ no override):
+
+    SERVER_PORT=9000
+
+    This does nothing unless you explicitly read it in code.
+
+    **************** EXPLAINING THE MAPPING RULE FOR THE [ABOVE] FINAL ENV OVERRIDES ****************/
+
+    builder
+        .build()
+        .context("Failed to build config")?
+        .try_deserialize()
+        .context("Invalid config shape")
+}
+
+
+#[derive(Debug)]
+pub enum ConfigError {
+    MissingAppName,
+    InvalidServerPort,
+    MissingServerSection,
+    MissingDatabaseSection,
+    MissingDatabaseName,
+    MissingDatabaseUser,
+    MissingDatabasePassword,
+    MissingAuthSection,
+    MissingJwtSecret,
+}
+
+impl fmt::Display for ConfigError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConfigError::MissingAppName => write!(f, "app.name cannot be empty"),
+            ConfigError::InvalidServerPort => write!(f, "server.port cannot be 0"),
+            ConfigError::MissingServerSection => write!(f, "server section is missing"),
+            ConfigError::MissingDatabaseSection => write!(f, "database section is missing"),
+            ConfigError::MissingDatabaseName => write!(f, "database.name cannot be empty"),
+            ConfigError::MissingDatabaseUser => write!(f, "database.user cannot be None"),
+            ConfigError::MissingDatabasePassword => write!(f, "database.password cannot be None"),
+            ConfigError::MissingAuthSection => write!(f, "auth section is missing"),
+            ConfigError::MissingJwtSecret => write!(f, "auth.jwt_secret cannot be empty"),
+        }
+    }
+}
+
+impl std::error::Error for ConfigError {}
+
+impl AppConfig {
+    pub fn validate(&self) -> std::result::Result<(), ConfigError> {
+        // Check app name
+        if self.app.name.trim().is_empty() {
+            return Err(ConfigError::MissingAppName);
+        }
+
+        // Check server
+        let server = self.server.as_ref().ok_or(ConfigError::MissingServerSection)?;
+        if server.port == 0 {
+            return Err(ConfigError::InvalidServerPort);
+        }
+
+        // Check database
+        let database = self.database.as_ref().ok_or(ConfigError::MissingDatabaseSection)?;
+        if database.name.trim().is_empty() {
+            return Err(ConfigError::MissingDatabaseName);
+        }
+        if database.user.is_none() {
+            return Err(ConfigError::MissingDatabaseUser);
+        }
+        if database.password.is_none() {
+            return Err(ConfigError::MissingDatabasePassword);
+        }
+
+        // Check auth
+        let auth = self.auth.as_ref().ok_or(ConfigError::MissingAuthSection)?;
+        if auth.jwt_secret.trim().is_empty() {
+            return Err(ConfigError::MissingJwtSecret);
+        }
+
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn valid_app_section() -> AppSection {
+        AppSection {
+            name: "Test App".to_string(),
+            environment: Some("development".to_string()),
+        }
+    }
+
+    fn valid_auth_section() -> AuthSection {
+        AuthSection {
+            jwt_secret: "secret".to_string(),
+            jwt_access_expiration_time_in_hours: 1,
+            jwt_refresh_expiration_time_in_hours: 24,
+            jwt_one_time_password_lifetime_in_minutes: 5,
+        }
+    }
+
+    #[test]
+    fn test_validate_valid_config() {
+        let config = AppConfig {
+            app: valid_app_section(),
+            client_integrations: ClientIntegrationsSection {
+                allow_access_middleware: true,
+                allow_sessions_middleware: true,
+                allow_logging_middleware: true,
+                allow_request_timeout_middleware: true,
+                allow_admin_routes_protector_middleware: true,
+            },
+            observability: ObservabilitySection {
+                enable_tracing: true,
+                enable_metrics: true,
+            },
+            server: Some(ServerSection {
+                host: "127.0.0.1".to_string(),
+                port: 8080,
+                request_timeout_secs: 60,
+            }),
+            database: Some(DatabaseSection {
+                engine: "postgres".to_string(),
+                host: "localhost".to_string(),
+                port: 5432,
+                user: Some("test".to_string()),
+                password: Some("pass".to_string()),
+                name: "db".to_string(),
+                max_connections: 5,
+                connect_timeout_secs: 3,
+            }),
+            auth: Some(valid_auth_section()),
+        };
+
+        assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn test_validate_missing_app_name() {
+        let mut config = AppConfig {
+            app: valid_app_section(),
+            client_integrations: ClientIntegrationsSection {
+                allow_access_middleware: false,
+                allow_sessions_middleware: false,
+                allow_logging_middleware: false,
+                allow_request_timeout_middleware: false,
+                allow_admin_routes_protector_middleware: false,
+            },
+            observability: ObservabilitySection {
+                enable_tracing: false,
+                enable_metrics: false,
+            },
+            server: Some(ServerSection {
+                host: "127.0.0.1".to_string(),
+                port: 8080,
+                request_timeout_secs: 60,
+            }),
+            database: Some(DatabaseSection {
+                engine: "postgres".to_string(),
+                host: "localhost".to_string(),
+                port: 5432,
+                user: Some("test".to_string()),
+                password: Some("pass".to_string()),
+                name: "db".to_string(),
+                max_connections: 5,
+                connect_timeout_secs: 3,
+            }),
+            auth: Some(valid_auth_section()),
+        };
+        config.app.name = "".to_string();
+
+        let result = config.validate();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "app.name cannot be empty");
+    }
+
+    #[test]
+    fn test_validate_invalid_port() {
+        let config = AppConfig {
+            app: valid_app_section(),
+            client_integrations: ClientIntegrationsSection {
+                allow_access_middleware: false,
+                allow_sessions_middleware: false,
+                allow_logging_middleware: false,
+                allow_request_timeout_middleware: false,
+                allow_admin_routes_protector_middleware: false,
+            },
+            observability: ObservabilitySection {
+                enable_tracing: false,
+                enable_metrics: false,
+            },
+            server: Some(ServerSection {
+                host: "127.0.0.1".to_string(),
+                port: 0,
+                request_timeout_secs: 60,
+            }),
+            database: Some(DatabaseSection {
+                engine: "postgres".to_string(),
+                host: "localhost".to_string(),
+                port: 5432,
+                user: Some("test".to_string()),
+                password: Some("pass".to_string()),
+                name: "db".to_string(),
+                max_connections: 5,
+                connect_timeout_secs: 3,
+            }),
+            auth: Some(valid_auth_section()),
+        };
+
+        let result = config.validate();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "server.port cannot be 0");
+    }
+
+    #[test]
+    fn test_validate_missing_database_fields() {
+        let config = AppConfig {
+            app: valid_app_section(),
+            client_integrations: ClientIntegrationsSection {
+                allow_access_middleware: false,
+                allow_sessions_middleware: false,
+                allow_logging_middleware: false,
+                allow_request_timeout_middleware: false,
+                allow_admin_routes_protector_middleware: false,
+            },
+            observability: ObservabilitySection {
+                enable_tracing: false,
+                enable_metrics: false,
+            },
+            server: Some(ServerSection {
+                host: "127.0.0.1".to_string(),
+                port: 8080,
+                request_timeout_secs: 60,
+            }),
+            database: Some(DatabaseSection {
+                engine: "postgres".to_string(),
+                host: "localhost".to_string(),
+                port: 5432,
+                user: None,
+                password: Some("pass".to_string()),
+                name: "db".to_string(),
+                max_connections: 5,
+                connect_timeout_secs: 3,
+            }),
+            auth: Some(valid_auth_section()),
+        };
+
+        let result = config.validate();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "database.user cannot be None");
+    }
+
+    #[test]
+    fn test_validate_missing_server_section() {
+        let config = AppConfig {
+            app: valid_app_section(),
+            client_integrations: ClientIntegrationsSection {
+                allow_access_middleware: false,
+                allow_sessions_middleware: false,
+                allow_logging_middleware: false,
+                allow_request_timeout_middleware: false,
+                allow_admin_routes_protector_middleware: false,
+            },
+            observability: ObservabilitySection {
+                enable_tracing: false,
+                enable_metrics: false,
+            },
+            server: None,
+            database: None,
+            auth: None,
+        };
+
+        let result = config.validate();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err().to_string(), "server section is missing");
+    }
+}
+
