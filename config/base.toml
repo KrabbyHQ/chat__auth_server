@@ -1,0 +1,17 @@
+[app]
+name = "chat_auth_server"
+environment = "development"
+
+[client_integrations] # feature flags
+allow_logging_middleware = true
+allow_request_timeout_middleware = true
+allow_rate_limit_middleware = false
+
+[server]
+host = "127.0.0.1"
+port = 8000
+request_timeout_secs = 60
+
+[observability]
+enable_tracing = true
+enable_metrics = true

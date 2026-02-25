@@ -1,0 +1,22 @@
+[app]
+environment = "development"
+
+[database]
+engine = "postgres"
+host = "localhost"
+port = 5433
+# user = "" // .env override will be picked by config crate - utils/load_config.rs
+# password = "" // .env override will be picked by config crate - utils/load_config.rs
+name = "rusty_chat_db_dev"
+max_connections = 20
+connect_timeout_secs = 5
+
+[auth]
+jwt_secret = "default_secret"
+jwt_access_expiration_time_in_hours = 1
+jwt_refresh_expiration_time_in_hours = 24
+jwt_one_time_password_lifetime_in_minutes = 5
+
+[observability]
+enable_tracing = true
+enable_metrics = true

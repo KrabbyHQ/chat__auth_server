@@ -1,0 +1,16 @@
+/target
+
+# .env
+.env.development
+.env.production
+.env.staging
+.env.template
+.env
+.env*
+
+# extras
+.idea
+.vscode
+bash.exe.stackdump
+NOTES.md
+
