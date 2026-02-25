@@ -1,6 +1,6 @@
 mod common;
 
-use common::{setup_test_server, LoginRequest, RegisterRequest, TestLoginResponse};
+use common::{LoginRequest, RegisterRequest, TestLoginResponse, setup_test_server};
 use uuid::Uuid;
 
 #[tokio::test]
@@ -40,7 +40,7 @@ async fn test_login_user_success() {
     let res = body.response.unwrap();
     assert!(res.access_token.is_some());
     assert!(res.refresh_token.is_some());
-    
+
     // Check if cookie is set
     let _ = response.cookie("rusty_chat_auth_cookie");
 }

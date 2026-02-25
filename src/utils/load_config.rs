@@ -1,12 +1,12 @@
-use std::fmt;
-use crate::utils::{load_env::load_env};
+use crate::utils::load_env::load_env;
 use anyhow::{Context, Result};
 use config::{Config, Environment, File};
 use serde::Deserialize;
+use std::fmt;
 
 #[derive(Debug, Deserialize)]
 pub struct AppSection {
-    pub name: String,   
+    pub name: String,
 
     // Commented out → optional
     pub environment: Option<String>,
@@ -90,7 +90,6 @@ pub fn load_config() -> Result<AppConfig> {
     // Determine environment
     let env = std::env::var("APP__ENV").context("APP__ENV environment variable is not set! Please set it to 'development', 'production', etc.")?;
 
-
     // Build configuration
     let builder = Config::builder()
         // Base config is required
@@ -103,7 +102,7 @@ pub fn load_config() -> Result<AppConfig> {
         .add_source(
             Environment::default()
                 .separator("__") // maps APP__SECTION__FIELD → section.field
-                .prefix("APP")  // all vars must start with APP__
+                .prefix("APP") // all vars must start with APP__
                 .try_parsing(true), // parse numbers/booleans automatically
         );
 
@@ -139,7 +138,6 @@ pub fn load_config() -> Result<AppConfig> {
         .try_deserialize()
         .context("Invalid config shape")
 }
-
 
 #[derive(Debug)]
 pub enum ConfigError {
@@ -180,13 +178,19 @@ impl AppConfig {
         }
 
         // Check server
-        let server = self.server.as_ref().ok_or(ConfigError::MissingServerSection)?;
+        let server = self
+            .server
+            .as_ref()
+            .ok_or(ConfigError::MissingServerSection)?;
         if server.port == 0 {
             return Err(ConfigError::InvalidServerPort);
         }
 
         // Check database
-        let database = self.database.as_ref().ok_or(ConfigError::MissingDatabaseSection)?;
+        let database = self
+            .database
+            .as_ref()
+            .ok_or(ConfigError::MissingDatabaseSection)?;
         if database.name.trim().is_empty() {
             return Err(ConfigError::MissingDatabaseName);
         }
@@ -375,7 +379,10 @@ mod tests {
 
         let result = config.validate();
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "database.user cannot be None");
+        assert_eq!(
+            result.unwrap_err().to_string(),
+            "database.user cannot be None"
+        );
     }
 
     #[test]
@@ -403,4 +410,3 @@ mod tests {
         assert_eq!(result.unwrap_err().to_string(), "server section is missing");
     }
 }
-

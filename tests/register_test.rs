@@ -1,6 +1,6 @@
 mod common;
 
-use common::{setup_test_server, RegisterRequest, TestRegisterResponse};
+use common::{RegisterRequest, TestRegisterResponse, setup_test_server};
 use uuid::Uuid;
 
 #[tokio::test]
@@ -24,9 +24,12 @@ async fn test_register_user_success() {
         .await;
 
     response.assert_status(axum::http::StatusCode::CREATED);
-    
+
     let body = response.json::<TestRegisterResponse>();
-    assert_eq!(body.response_message, format!("User with email '{}' registered successfully!", email));
+    assert_eq!(
+        body.response_message,
+        format!("User with email '{}' registered successfully!", email)
+    );
     assert!(body.response.unwrap().user_profile.unwrap().id > 0);
 }
 

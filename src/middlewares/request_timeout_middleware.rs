@@ -17,8 +17,8 @@ pub struct TimeoutErrorResponse {
 // Timeout Middleware
 // ============================================================================
 
-use axum::extract::State;
 use crate::AppState;
+use axum::extract::State;
 
 pub async fn timeout_middleware(
     State(state): State<AppState>,
@@ -30,7 +30,12 @@ pub async fn timeout_middleware(
     let start_timestamp = chrono::Local::now();
 
     let timeout_duration = Duration::from_secs(
-        state.config.server.as_ref().map(|s| s.request_timeout_secs).unwrap_or(60)
+        state
+            .config
+            .server
+            .as_ref()
+            .map(|s| s.request_timeout_secs)
+            .unwrap_or(60),
     );
 
     // Run the request inside a timeout future

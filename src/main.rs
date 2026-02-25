@@ -1,11 +1,11 @@
-use chat__auth_server::{create_app, AppState};
 use chat__auth_server::db::connect_postgres::connect_pg;
 use chat__auth_server::utils::load_config::load_config;
 use chat__auth_server::utils::load_env::load_env;
-use tracing::{error, info};
-use tracing_subscriber::fmt::time::SystemTime;
+use chat__auth_server::{AppState, create_app};
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tracing::{error, info};
+use tracing_subscriber::fmt::time::SystemTime;
 
 fn initialize_logging() {
     tracing_subscriber::fmt()
@@ -27,7 +27,10 @@ async fn main() {
     let clean_config = match app_config {
         Ok(config) => {
             if let Err(e) = config.validate() {
-                let error = format!("SERVER START-UP ERROR: FAILED TO LOAD SERVER CONFIGURATIONS, {}", e);
+                let error = format!(
+                    "SERVER START-UP ERROR: FAILED TO LOAD SERVER CONFIGURATIONS, {}",
+                    e
+                );
                 error!("{}", error);
                 return;
             }
@@ -35,28 +38,41 @@ async fn main() {
             config
         }
         Err(e) => {
-            let error = format!("SERVER START-UP ERROR: FAILED TO LOAD SERVER CONFIGURATIONS, {}", e);
+            let error = format!(
+                "SERVER START-UP ERROR: FAILED TO LOAD SERVER CONFIGURATIONS, {}",
+                e
+            );
             error!("{}", error);
             return;
         }
     };
 
-    let db_config = clean_config.database.as_ref().expect("SERVER START-UP ERROR: DATABASE CONFIGURATION IS MISSING!");
+    let db_config = clean_config
+        .database
+        .as_ref()
+        .expect("SERVER START-UP ERROR: DATABASE CONFIGURATION IS MISSING!");
 
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
-        db_config.user.as_deref().expect("SERVER START-UP ERROR: DATABASE USER IS MISSING!"),
-        db_config.password.as_deref().expect("SERVER START-UP ERROR: DATABASE PASSWORD IS MISSING!"),
+        db_config
+            .user
+            .as_deref()
+            .expect("SERVER START-UP ERROR: DATABASE USER IS MISSING!"),
+        db_config
+            .password
+            .as_deref()
+            .expect("SERVER START-UP ERROR: DATABASE PASSWORD IS MISSING!"),
         db_config.host,
         db_config.port,
         db_config.name
     );
-    
+
     let db_pool = connect_pg(
         database_url.clone(),
         db_config.max_connections,
         db_config.connect_timeout_secs,
-    ).await;
+    )
+    .await;
 
     let state = AppState {
         config: Arc::new(clean_config),
@@ -65,7 +81,12 @@ async fn main() {
 
     let app = create_app(state.clone());
 
-    let host = state.config.server.as_ref().map(|s| s.host.as_str()).unwrap_or("127.0.0.1");
+    let host = state
+        .config
+        .server
+        .as_ref()
+        .map(|s| s.host.as_str())
+        .unwrap_or("127.0.0.1");
     let port = state.config.server.as_ref().map(|s| s.port).unwrap_or(8000);
 
     let addr: SocketAddr = format!("{}:{}", host, port)
