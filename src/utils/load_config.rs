@@ -1,16 +1,22 @@
+//! # Configuration Management
+//!
+//! This module handles loading and validating the application configuration from
+//! multiple sources: base TOML files, environment-specific overrides, local
+//! overrides, and environment variables.
+
 use crate::utils::load_env::load_env;
 use anyhow::{Context, Result};
 use config::{Config, Environment, File};
 use serde::Deserialize;
 use std::fmt;
 
+/// Application-specific metadata section.
 #[derive(Debug, Deserialize)]
 pub struct AppSection {
+    /// The name of the application.
     pub name: String,
-
-    // Commented out → optional
+    /// The current environment (e.g., development, production).
     pub environment: Option<String>,
-    // pub log_level: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -70,6 +76,7 @@ pub struct AuthSection {
 //     pub rate_limit_per_minute: u32,
 // }
 
+/// Root configuration structure containing all application settings.
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     pub app: AppSection,
@@ -83,6 +90,13 @@ pub struct AppConfig {
     // pub security: Option<SecuritySection>,
 }
 
+/// Loads the application configuration.
+///
+/// Order of precedence (highest to lowest):
+/// 1. Environment variables (prefixed with `APP__`) - overrides every other configuration setup
+/// 2. `config/local.toml` - overrides `config/{APP__ENV}.toml` and `config/base.toml`
+/// 3. `config/{APP__ENV}.toml` - overrides `config/base.toml`
+/// 4. `config/base.toml` - default values
 pub fn load_config() -> Result<AppConfig> {
     // Load .env file if present
     load_env();

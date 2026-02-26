@@ -1,3 +1,9 @@
+//! # Token Generation
+//!
+//! This module handles the creation of JSON Web Tokens (JWTs) for authentication,
+//! including access tokens, refresh tokens, and one-time passwords (OTPs).
+//! It also generates specialized authentication cookies.
+
 use crate::utils::hashing_handler::hashing_handler;
 use crate::utils::load_config::AppConfig;
 use chrono::{Duration, Utc};
@@ -5,22 +11,29 @@ use jsonwebtoken::errors::Error as JwtError;
 use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
 
+/// JWT Claims structure.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
+    /// User ID.
     pub id: i64,
+    /// User email address.
     pub email: String,
+    /// Expiration timestamp (seconds since epoch).
     pub exp: usize,
+    /// Issued-at timestamp (seconds since epoch).
     pub iat: usize,
 }
 
+/// Simplified User structure for token generation.
 #[derive(Clone, Debug)]
 pub struct User {
+    /// User ID.
     pub id: i64,
+    /// User email address.
     pub email: String,
-    // pub is_admin: Option<bool>,
-    // pub is_active: Option<bool>,
 }
 
+/// Container for generated tokens and cookies.
 #[derive(Debug, Serialize)]
 pub struct Tokens {
     pub access_token: Option<String>,
@@ -29,6 +42,12 @@ pub struct Tokens {
     pub auth_cookie: Option<String>,
 }
 
+/// Generates tokens based on the requested `token_type`.
+///
+/// # Arguments
+/// - `token_type`: Either `"auth"` for access/refresh tokens or `"one_time_password"` for OTP.
+/// - `user`: The user for whom tokens are being generated.
+/// - `config`: Application configuration for JWT secrets and lifetimes.
 pub async fn generate_tokens(
     token_type: &str,
     user: User,
@@ -92,7 +111,7 @@ pub async fn generate_tokens(
                 Err(e) => e.to_string(),
             };
 
-            let auth_cookie_part_b = match hashing_handler(&jwt_secret).await {
+            let auth_cookie_part_b = match hashing_handler(jwt_secret).await {
                 Ok(hash) => hash.to_string(),
                 Err(e) => e.to_string(),
             };

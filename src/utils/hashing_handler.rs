@@ -1,8 +1,15 @@
+//! # Password Hashing
+//!
+//! This module provides functionality for hashing passwords using the Argon2 algorithm.
+
 use argon2::{
     Argon2,
     password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
 };
 
+/// Hashes a plain-text string using Argon2 with a random salt.
+///
+/// Returns the hashed string in PHC format, or an `Err` if hashing fails.
 pub async fn hashing_handler(string_to_hash: &str) -> Result<String, argon2::password_hash::Error> {
     // Generate a random 16-byte salt
     let salt = SaltString::generate(&mut OsRng);

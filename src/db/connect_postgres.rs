@@ -1,6 +1,20 @@
+//! # PostgreSQL Connection Handler
+//!
+//! This module provides functionality for establishing and managing
+//! the connection pool to the PostgreSQL database.
+
 use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
 
+/// Establishes a connection to the PostgreSQL database.
+///
+/// # Arguments
+/// - `database_url`: The full connection string (e.g., `postgres://user:pass@host:port/dbname`).
+/// - `max_connections`: Maximum number of concurrent connections in the pool.
+/// - `acquire_timeout_secs`: Timeout in seconds for acquiring a connection from the pool.
+///
+/// # Panics
+/// Panics if the connection fails, providing a detailed troubleshooting guide.
 pub async fn connect_pg(
     database_url: String,
     max_connections: u32,

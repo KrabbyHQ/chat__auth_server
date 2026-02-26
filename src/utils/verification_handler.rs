@@ -1,8 +1,16 @@
+//! # Password Verification
+//!
+//! This module provides functionality for verifying passwords against Argon2 hashes.
+
 use argon2::{
     Argon2,
     password_hash::{PasswordHash, PasswordVerifier},
 };
 
+/// Verifies a plain-text string against a hashed string using Argon2.
+///
+/// Returns `Ok(true)` if the password matches the hash, `Ok(false)` if it doesn't,
+/// and an `Err` if the hash parsing or verification process fails.
 pub async fn verification_handler(
     string_to_compare: &str,
     hashed_string: &str,
