@@ -5,22 +5,30 @@ This repository contains the AUTH REST API layer/service for the Krabby `chat` i
 ## Core Features
 
 - Complete JWT + Cookie Authentication implementation.
+
 - Argon2 password Hashing.
-- PostgreSQL + SQLX for database and database operations respectively
+
+- PostgreSQL + SQLX for database and database operations respectively.
+
 - Dynamic Multi-layer configuration system (TOML + Environment Variables).
+
 - Robust Error Handling and clear API responses.
+
 - Comprehensive Testing with unit tests for utilities and integration tests for API endpoints.
-- Middleware Integration for Logging, Request Timeouts, and Cookie management.
+
+- Middleware Integration for logging, request timeouts, and Cookie management.
 
 ## Setup & Execution
 
-### 1. Prerequisites
+### 1. Core Prerequisites
 
 - [Rust](https://www.rust-lang.org/tools/install) (latest stable)
 
 - [Docker](https://www.docker.com/) (for database)
 
 - [sqlx-cli](https://github.com/launchbadge/sqlx/tree/main/sqlx-cli) (`cargo install sqlx-cli`)
+
+- [NodeJs](https://nodejs.org/en/download/) and [Bun](https://bun.sh/) (for contribution standards enforcement)
 
 ### 2. Database Setup
 
@@ -36,7 +44,7 @@ E.g.
 docker run -d --name rusty-chat__dev_db -p 5433:5432 -e POSTGRES_USER=okpainmo -e POSTGRES_PASSWORD=supersecret -e POSTGRES_DB=rusty_chat_db_dev postgres
 ```
 
-Initialize the schema:
+Initialize the schema to sync with your newly set up database:
 
 ```shell
 sqlx migrate run --database-url postgres://<user-name>:<password>@localhost:5433/<database-name>
@@ -64,7 +72,7 @@ sqlx migrate add added_new_hello_field_to_users_table
 
 2. Edit the migration file to add the SQL schema update.
 
-3. Sync the SQL schema with the database.
+3. Sync the database with the new migration.
 
 ```shell
 sqlx migrate run --database-url postgres://<user-name>:<password>@localhost:5433/<database-name>
@@ -88,11 +96,42 @@ cargo dev
 
 *Note: The `dev` command is an alias for `cargo watch`. If you are on WSL and reload doesn't trigger, proceed to use the polling command option(also see `.cargo/config.toml` for reference on that).*
 
-## Configuration System
+### 4. Setting up to ensure contribution standards
+
+Based on previous research, the Rust ecosystem lacks a very robust/mature and fully integrated solution for enforcing code contribution standards, such as conventional commits, pre-commit hooks, and automated linting checks. 
+
+By leveraging non-rust packages like `Husky` and `Commitlint`, the project gains a comprehensive cross-language workflow that ensures:
+
+- Standardized commit messages across all contributors
+
+- Automatic pre-commit checks (formatting, linting, compilation)
+
+- Pre-push checks enforcement
+
+> The project however stays focused - with it's core as pure Rust. The `NodeJs` integration only introduced the packages needed for enforcing code/contribution standards on the project.
+>
+> P.S: The preferred `NodeJs` package manager is `Bun`.
+
+
+To integrate the `Husky` and `Commitlint` setup into your current Rust workflow:
+
+1. Ensure to sync with the main branch and pull in all updates:
+
+```shell
+git pull origin main
+```
+
+2. Install the new packages with Bun and ensure Husky is properly initialized:
+
+```shell
+bun install && husky init
+```
+
+## Project Config Setup
 
 The project uses a highly flexible configuration pattern powered by the `config` crate.
 
-### Loading Order(Arranged in increasing order of Priority):
+### Loading Order(Arranged in increasing order of overriding authority):
 
 1. **Base Config**: `config/base.toml` (Default values).
 
