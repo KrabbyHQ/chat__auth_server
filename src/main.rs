@@ -1,12 +1,22 @@
-use chat__auth_server::db::connect_postgres::connect_pg;
-use chat__auth_server::utils::load_config::load_config;
-use chat__auth_server::utils::load_env::load_env;
-use chat__auth_server::{AppState, create_app};
+//! # Chat Auth Server Binary
+//!
+//! The entry point for the authentication server. This binary handles:
+//! - Environment variable loading.
+//! - Logging initialization.
+//! - Configuration validation.
+//! - Database connection establishment.
+//! - Server binding and execution.
+
+use chat_auth_server::db::connect_postgres::connect_pg;
+use chat_auth_server::utils::load_config::load_config;
+use chat_auth_server::utils::load_env::load_env;
+use chat_auth_server::{AppState, create_app};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tracing::{error, info};
 use tracing_subscriber::fmt::time::SystemTime;
 
+/// Initializes the global tracing subscriber with JSON formatting.
 fn initialize_logging() {
     tracing_subscriber::fmt()
         .json()
@@ -47,24 +57,33 @@ async fn main() {
         }
     };
 
-    let db_config = clean_config
-        .database
-        .as_ref()
-        .expect("SERVER START-UP ERROR: DATABASE CONFIGURATION IS MISSING!");
+    let db_config = match clean_config.database.as_ref() {
+        Some(config) => config,
+        None => {
+            error!("SERVER START-UP ERROR: DATABASE CONFIGURATION IS MISSING!");
+            return;
+        }
+    };
+
+    let db_user = match db_config.user.as_deref() {
+        Some(user) => user,
+        None => {
+            error!("SERVER START-UP ERROR: DATABASE USER IS MISSING!");
+            return;
+        }
+    };
+
+    let db_password = match db_config.password.as_deref() {
+        Some(password) => password,
+        None => {
+            error!("SERVER START-UP ERROR: DATABASE PASSWORD IS MISSING!");
+            return;
+        }
+    };
 
     let database_url = format!(
         "postgres://{}:{}@{}:{}/{}",
-        db_config
-            .user
-            .as_deref()
-            .expect("SERVER START-UP ERROR: DATABASE USER IS MISSING!"),
-        db_config
-            .password
-            .as_deref()
-            .expect("SERVER START-UP ERROR: DATABASE PASSWORD IS MISSING!"),
-        db_config.host,
-        db_config.port,
-        db_config.name
+        db_user, db_password, db_config.host, db_config.port, db_config.name
     );
 
     let db_pool = connect_pg(
