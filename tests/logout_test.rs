@@ -1,6 +1,6 @@
 mod common;
 
-use common::{setup_test_server, RegisterRequest, TestLoginResponse};
+use common::{RegisterRequest, TestLoginResponse, setup_test_server};
 use uuid::Uuid;
 
 #[tokio::test]
@@ -33,7 +33,7 @@ async fn test_logout_user_success() {
     response.assert_status(axum::http::StatusCode::OK);
     let body = response.json::<TestLoginResponse>();
     assert_eq!(body.response_message, "Logout successful");
-    
+
     // Auth cookie should be cleared (max-age=0)
     // Note: TestServer's cookie handling might vary, but we expect the header to be present
 }

@@ -15,7 +15,10 @@ pub async fn deploy_auth_cookie(cookies: Cookies, cookie_value: String, config: 
     // Create a basic cookie
     let mut cookie = Cookie::new("rusty_chat_auth_cookie", cookie_value);
 
-    let auth = config.auth.as_ref().expect("AUTH CONFIGURATION IS MISSING!");
+    let auth = config
+        .auth
+        .as_ref()
+        .expect("AUTH CONFIGURATION IS MISSING!");
     let is_dev = config.app.environment.as_deref().unwrap_or("production") == "development";
 
     // Set cookie attributes for security
@@ -26,7 +29,9 @@ pub async fn deploy_auth_cookie(cookies: Cookies, cookie_value: String, config: 
     cookie.set_same_site(tower_cookies::cookie::SameSite::Lax);
 
     // Optional: set expiration from config
-    cookie.set_max_age(time::Duration::hours(auth.jwt_refresh_expiration_time_in_hours as i64));
+    cookie.set_max_age(time::Duration::hours(
+        auth.jwt_refresh_expiration_time_in_hours as i64,
+    ));
 
     cookies.add(cookie);
 }

@@ -29,9 +29,16 @@ pub struct Tokens {
     pub auth_cookie: Option<String>,
 }
 
-pub async fn generate_tokens(token_type: &str, user: User, config: &AppConfig) -> Result<Tokens, JwtError> {
-    let auth = config.auth.as_ref().expect("AUTH CONFIGURATION IS MISSING!");
-    
+pub async fn generate_tokens(
+    token_type: &str,
+    user: User,
+    config: &AppConfig,
+) -> Result<Tokens, JwtError> {
+    let auth = config
+        .auth
+        .as_ref()
+        .expect("AUTH CONFIGURATION IS MISSING!");
+
     let jwt_secret = &auth.jwt_secret;
     let access_expiry = auth.jwt_access_expiration_time_in_hours;
     let session_expiry = auth.jwt_refresh_expiration_time_in_hours;
@@ -137,7 +144,9 @@ pub async fn generate_tokens(token_type: &str, user: User, config: &AppConfig) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::load_config::{AppSection, ClientIntegrationsSection, ObservabilitySection, AuthSection};
+    use crate::utils::load_config::{
+        AppSection, AuthSection, ClientIntegrationsSection, ObservabilitySection,
+    };
 
     fn mock_config() -> AppConfig {
         AppConfig {

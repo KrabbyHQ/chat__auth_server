@@ -27,7 +27,7 @@ mod tests {
     async fn test_verification_handler_success() {
         let password = "my_secure_password";
         let hash = hashing_handler(password).await.unwrap();
-        
+
         let result = verification_handler(password, &hash).await;
         assert!(result.is_ok());
         assert!(result.unwrap());
@@ -38,7 +38,7 @@ mod tests {
         let password = "my_secure_password";
         let wrong_password = "wrong_password";
         let hash = hashing_handler(password).await.unwrap();
-        
+
         let result = verification_handler(wrong_password, &hash).await;
         assert!(result.is_ok());
         assert!(!result.unwrap());

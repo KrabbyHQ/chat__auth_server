@@ -17,8 +17,8 @@ pub struct TimeoutErrorResponse {
 // Timeout Middleware
 // ============================================================================
 
-use axum::extract::State;
 use crate::AppState;
+use axum::extract::State;
 
 pub async fn timeout_middleware(
     State(state): State<AppState>,
@@ -29,9 +29,14 @@ pub async fn timeout_middleware(
     let start_time = Instant::now();
     let start_timestamp = chrono::Local::now();
 
-    let timeout_duration = Duration::from_secs(
-        state.config.server.as_ref().map(|s| s.request_timeout_secs).unwrap_or(60)
-    );
+    let timeout_secs = state
+        .config
+        .server
+        .as_ref()
+        .map(|s| s.request_timeout_secs)
+        .unwrap_or(60);
+
+    let timeout_duration = Duration::from_secs(timeout_secs);
 
     // Run the request inside a timeout future
     match timeout(timeout_duration, next.run(req)).await {
@@ -65,8 +70,10 @@ pub async fn timeout_middleware(
                 StatusCode::REQUEST_TIMEOUT,
                 Json(TimeoutErrorResponse {
                     error: "Request Timeout".to_string(),
-                    response_message: "Request exceeded the maximum allowed time of 60 seconds"
-                        .to_string(),
+                    response_message: format!(
+                        "Request exceeded the maximum allowed time of {} seconds",
+                        timeout_secs
+                    ),
                 }),
             ))
         }
