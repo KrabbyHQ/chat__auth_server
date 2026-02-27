@@ -125,7 +125,7 @@ pub async fn generate_tokens(
             let auth_cookie_part_b = hashing_handler(jwt_secret).await?;
 
             let auth_cookie = format!(
-                "rusty_chat____{ }____{ }",
+                "rusty_chat____{}____{}",
                 auth_cookie_part_a, auth_cookie_part_b
             );
 

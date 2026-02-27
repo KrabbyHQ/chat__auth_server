@@ -1,4 +1,4 @@
-# Krabby/chat/auth_server.
+# Krabby Chat Auth Server.
 
 This repository contains the AUTH REST API layer/service for the Krabby `chat` implementation.
 
@@ -28,7 +28,7 @@ This repository contains the AUTH REST API layer/service for the Krabby `chat` i
 
 - [sqlx-cli](https://github.com/launchbadge/sqlx/tree/main/sqlx-cli) (`cargo install sqlx-cli`)
 
-- [NodeJs](https://nodejs.org/en/download/) and [Bun](https://bun.sh/) (for contribution standards enforcement)
+- [Node.js](https://nodejs.org/en/download/) and [Bun](https://bun.sh/) (for contribution standards enforcement)
 
 ### 2. Database Setup
 
@@ -108,9 +108,9 @@ By leveraging non-rust packages like `Husky` and `Commitlint`, the project gains
 
 - Pre-push checks enforcement
 
-> The project however stays focused - with it's core as pure Rust. The `NodeJs` integration only introduced the packages needed for enforcing code/contribution standards on the project.
+> The project however stays focused - with its core as pure Rust. The `Node.js` integration only introduced the packages needed for enforcing code/contribution standards on the project.
 >
-> P.S: The preferred `NodeJs` package manager is `Bun`.
+> P.S: The preferred `Node.js` package manager is `Bun`.
 
 
 To integrate the `Husky` and `Commitlint` setup into your current Rust workflow:
