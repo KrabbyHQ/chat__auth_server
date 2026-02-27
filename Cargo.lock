@@ -275,11 +275,13 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "thiserror",
  "time",
  "tokio",
  "tower-cookies",
  "tracing",
  "tracing-subscriber",
+ "url",
  "uuid",
 ]
 

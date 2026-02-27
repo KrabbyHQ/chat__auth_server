@@ -58,7 +58,7 @@ pub async fn timeout_middleware(
             let end_timestamp = chrono::Local::now();
             let duration_ms = start_time.elapsed().as_secs_f64() * 1000.0;
 
-            println!(
+            tracing::error!(
                 "[TIMEOUT MIDDLEWARE] TIMEOUT! Path: {} | Start: {} | End: {} | Duration: {:.3}ms",
                 path,
                 start_timestamp.format("%H:%M:%S%.3f"),

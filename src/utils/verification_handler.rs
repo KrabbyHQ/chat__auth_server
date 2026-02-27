@@ -9,8 +9,7 @@ use argon2::{
 
 /// Verifies a plain-text string against a hashed string using Argon2.
 ///
-/// Returns `Ok(true)` if the password matches the hash and `Ok(false)` otherwise.
-/// Returns `Err` only when the provided hash string cannot be parsed.
+/// Returns `Ok(true)` when the password matches, `Ok(false)` when it does not (including cases where verification fails and is converted via `.is_ok()`), and only returns `Err` on hash parsing failures.
 pub async fn verification_handler(
     string_to_compare: &str,
     hashed_string: &str,

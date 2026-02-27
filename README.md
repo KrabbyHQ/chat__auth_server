@@ -34,6 +34,9 @@ This repository contains the AUTH REST API layer/service for the Krabby `chat` i
 
 Start the local PostgreSQL database:
 
+```shell
+docker run -d --name <container-name> -p 5433:5432 -e POSTGRES_USER=<user-name> -e POSTGRES_PASSWORD=<password> -e POSTGRES_DB=<database-name> postgres
+```
 
 E.g.
 

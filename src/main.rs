@@ -42,7 +42,7 @@ async fn main() {
                     e
                 );
                 error!("{}", error);
-                return;
+                std::process::exit(1);
             }
 
             config
@@ -53,7 +53,7 @@ async fn main() {
                 e
             );
             error!("{}", error);
-            return;
+            std::process::exit(1);
         }
     };
 
@@ -61,7 +61,7 @@ async fn main() {
         Some(config) => config,
         None => {
             error!("SERVER START-UP ERROR: DATABASE CONFIGURATION IS MISSING!");
-            return;
+            std::process::exit(1);
         }
     };
 
@@ -69,7 +69,7 @@ async fn main() {
         Some(user) => user,
         None => {
             error!("SERVER START-UP ERROR: DATABASE USER IS MISSING!");
-            return;
+            std::process::exit(1);
         }
     };
 
@@ -77,7 +77,7 @@ async fn main() {
         Some(password) => password,
         None => {
             error!("SERVER START-UP ERROR: DATABASE PASSWORD IS MISSING!");
-            return;
+            std::process::exit(1);
         }
     };
 
@@ -112,7 +112,12 @@ async fn main() {
         .parse()
         .expect("Invalid server address");
 
-    let slice_db_url = format!("{}...", &database_url[0..25]);
+    let db_config_ref = state.config.database.as_ref().unwrap();
+
+    let slice_db_url = format!(
+        "postgres://...@{}:{}/..",
+        db_config_ref.host, db_config_ref.port,
+    );
 
     let listener = match tokio::net::TcpListener::bind(addr).await {
         Ok(listener) => {
@@ -134,7 +139,7 @@ async fn main() {
         }
         Err(e) => {
             error!("SERVER INITIALIZATION ERROR: {}!", e);
-            return;
+            std::process::exit(1);
         }
     };
 

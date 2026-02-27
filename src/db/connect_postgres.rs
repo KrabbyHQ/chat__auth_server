@@ -34,6 +34,15 @@ pub async fn connect_pg(
             p
         }
         Err(e) => {
+            let redacted_url = match url::Url::parse(&database_url) {
+                Ok(mut u) => {
+                    let _ = u.set_password(None);
+                    let _ = u.set_username("...");
+                    u.to_string()
+                }
+                Err(_) => "INVALID_DB_URL".to_string(),
+            };
+
             println!(
                 "
                 CRITICAL DATABASE CONNECTION ERROR:
@@ -48,7 +57,7 @@ pub async fn connect_pg(
                 4. Is the network allowing connection to port 5432?
                 -------------------------------------------------
                 ",
-                e, database_url
+                e, redacted_url
             );
 
             panic!("DATABASE CONNECTION FAILED: {}", e);
