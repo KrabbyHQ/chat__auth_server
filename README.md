@@ -181,8 +181,7 @@ The project uses several `.env` files to manage environment-specific configurati
 
 - `.env.production`: Contains sensitive production-only credentials and settings.
 
-> **Note:** Please request the current state of each file from the project lead to ensure your local environment is correctly configured.
-
+> **Note:** Do not share real `.env` files (especially production). Use a sanitized `.env.example` for required keys and retrieve real secrets through the approved secret-management process.
 
 ## Testing
 
