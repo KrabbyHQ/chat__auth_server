@@ -41,16 +41,16 @@ pub async fn timeout_middleware(
     // Run the request inside a timeout future
     match timeout(timeout_duration, next.run(req)).await {
         Ok(response) => {
-            // let end_timestamp = chrono::Local::now();
-            // let duration_ms = start_time.elapsed().as_secs_f64() * 1000.0;
-            //
-            // println!(
-            //     "[TIMEOUT MIDDLEWARE] Path: {} | Start: {} | End: {} | Duration: {:.3}ms",
-            //     path,
-            //     start_timestamp.format("%H:%M:%S%.3f"),
-            //     end_timestamp.format("%H:%M:%S%.3f"),
-            //     duration_ms,
-            // );
+            let end_timestamp = chrono::Local::now();
+            let duration_ms = start_time.elapsed().as_secs_f64() * 1000.0;
+
+            tracing::debug!(
+                "[TIMEOUT MIDDLEWARE] Path: {} | Start: {} | End: {} | Duration: {:.3}ms",
+                path,
+                start_timestamp.format("%H:%M:%S%.3f"),
+                end_timestamp.format("%H:%M:%S%.3f"),
+                duration_ms,
+            );
 
             Ok(response)
         }
@@ -58,7 +58,7 @@ pub async fn timeout_middleware(
             let end_timestamp = chrono::Local::now();
             let duration_ms = start_time.elapsed().as_secs_f64() * 1000.0;
 
-            println!(
+            tracing::error!(
                 "[TIMEOUT MIDDLEWARE] TIMEOUT! Path: {} | Start: {} | End: {} | Duration: {:.3}ms",
                 path,
                 start_timestamp.format("%H:%M:%S%.3f"),

@@ -1,16 +1,21 @@
-use crate::utils::load_env::load_env;
+//! # Configuration Management
+//!
+//! This module handles loading and validating the application configuration from
+//! multiple sources: base TOML files, environment-specific overrides, local
+//! overrides, and environment variables.
+
 use anyhow::{Context, Result};
 use config::{Config, Environment, File};
 use serde::Deserialize;
 use std::fmt;
 
+/// Application-specific metadata section.
 #[derive(Debug, Deserialize)]
 pub struct AppSection {
+    /// The name of the application.
     pub name: String,
-
-    // Commented out → optional
+    /// The current environment (e.g., development, production).
     pub environment: Option<String>,
-    // pub log_level: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -70,6 +75,7 @@ pub struct AuthSection {
 //     pub rate_limit_per_minute: u32,
 // }
 
+/// Root configuration structure containing all application settings.
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     pub app: AppSection,
@@ -83,10 +89,14 @@ pub struct AppConfig {
     // pub security: Option<SecuritySection>,
 }
 
+/// Loads the application configuration.
+///
+/// Order of precedence (highest to lowest):
+/// 1. Environment variables (prefixed with `APP__`) - overrides every other configuration setup
+/// 2. `config/local.toml` - overrides `config/{APP__ENV}.toml` and `config/base.toml`
+/// 3. `config/{APP__ENV}.toml` - overrides `config/base.toml`
+/// 4. `config/base.toml` - default values
 pub fn load_config() -> Result<AppConfig> {
-    // Load .env file if present
-    load_env();
-
     // Determine environment
     let env = std::env::var("APP__ENV").context("APP__ENV environment variable is not set! Please set it to 'development', 'production', etc.")?;
 
@@ -95,7 +105,7 @@ pub fn load_config() -> Result<AppConfig> {
         // Base config is required
         .add_source(File::with_name("config/base").required(true))
         // Environment-specific overrides (optional)
-        .add_source(File::with_name(&format!("config/{}", env)).required(true))
+        .add_source(File::with_name(&format!("config/{}", env)).required(false))
         // Local overrides (optional, for dev machines)
         .add_source(File::with_name("config/local").required(false))
         // Environment variable overrides
@@ -160,8 +170,8 @@ impl fmt::Display for ConfigError {
             ConfigError::MissingServerSection => write!(f, "server section is missing"),
             ConfigError::MissingDatabaseSection => write!(f, "database section is missing"),
             ConfigError::MissingDatabaseName => write!(f, "database.name cannot be empty"),
-            ConfigError::MissingDatabaseUser => write!(f, "database.user cannot be None"),
-            ConfigError::MissingDatabasePassword => write!(f, "database.password cannot be None"),
+            ConfigError::MissingDatabaseUser => write!(f, "database.user cannot be empty"),
+            ConfigError::MissingDatabasePassword => write!(f, "database.password cannot be empty"),
             ConfigError::MissingAuthSection => write!(f, "auth section is missing"),
             ConfigError::MissingJwtSecret => write!(f, "auth.jwt_secret cannot be empty"),
         }
@@ -194,10 +204,20 @@ impl AppConfig {
         if database.name.trim().is_empty() {
             return Err(ConfigError::MissingDatabaseName);
         }
-        if database.user.is_none() {
+        if database
+            .user
+            .as_ref()
+            .map(|s| s.trim().is_empty())
+            .unwrap_or(true)
+        {
             return Err(ConfigError::MissingDatabaseUser);
         }
-        if database.password.is_none() {
+        if database
+            .password
+            .as_ref()
+            .map(|s| s.trim().is_empty())
+            .unwrap_or(true)
+        {
             return Err(ConfigError::MissingDatabasePassword);
         }
 
@@ -381,7 +401,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err().to_string(),
-            "database.user cannot be None"
+            "database.user cannot be empty"
         );
     }
 

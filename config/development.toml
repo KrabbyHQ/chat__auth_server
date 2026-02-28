@@ -5,9 +5,9 @@ environment = "development"
 engine = "postgres"
 host = "localhost"
 port = 5433
-# user = "" // .env override will be picked by config crate - utils/load_config.rs
-# password = "" // .env override will be picked by config crate - utils/load_config.rs
-name = "rusty_chat_db_dev"
+user = "<db-user>" # will be overridden(with real values) from the expected environment variables file
+password = "<db-password>" # will be overridden(with real values) from the expected environment variables file
+name = "<db-name>" # will be overridden(with real values) from the expected environment variables file
 max_connections = 20
 connect_timeout_secs = 5
 

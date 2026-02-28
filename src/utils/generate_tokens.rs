@@ -1,26 +1,59 @@
+//! # Token Generation
+//!
+//! This module handles the creation of JSON Web Tokens (JWTs) for authentication,
+//! including access tokens, refresh tokens, and one-time passwords (OTPs).
+//! It also generates specialized authentication cookies.
+
 use crate::utils::hashing_handler::hashing_handler;
 use crate::utils::load_config::AppConfig;
 use chrono::{Duration, Utc};
-use jsonwebtoken::errors::Error as JwtError;
 use jsonwebtoken::{EncodingKey, Header, encode};
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
+#[derive(Debug, Error)]
+pub enum JwtError {
+    #[error("JWT error: {0}")]
+    Jwt(#[from] jsonwebtoken::errors::Error),
+    #[error("Hashing error: {0}")]
+    Hashing(argon2::password_hash::Error),
+    #[error("Auth configuration is missing")]
+    MissingAuth,
+    #[error("Invalid token type: {0}")]
+    InvalidTokenType(String),
+    #[error("Expiration calculation failed: {0}")]
+    ExpirationCalculation(String),
+}
+
+impl From<argon2::password_hash::Error> for JwtError {
+    fn from(err: argon2::password_hash::Error) -> Self {
+        JwtError::Hashing(err)
+    }
+}
+
+/// JWT Claims structure.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
+    /// User ID.
     pub id: i64,
+    /// User email address.
     pub email: String,
+    /// Expiration timestamp (seconds since epoch).
     pub exp: usize,
+    /// Issued-at timestamp (seconds since epoch).
     pub iat: usize,
 }
 
+/// Simplified User structure for token generation.
 #[derive(Clone, Debug)]
 pub struct User {
+    /// User ID.
     pub id: i64,
+    /// User email address.
     pub email: String,
-    // pub is_admin: Option<bool>,
-    // pub is_active: Option<bool>,
 }
 
+/// Container for generated tokens and cookies.
 #[derive(Debug, Serialize)]
 pub struct Tokens {
     pub access_token: Option<String>,
@@ -29,35 +62,29 @@ pub struct Tokens {
     pub auth_cookie: Option<String>,
 }
 
+/// Generates tokens based on the requested `token_type`.
+///
+/// # Arguments
+/// - `token_type`: Either `"auth"` for access/refresh tokens or `"one_time_password"` for OTP.
+/// - `user`: The user for whom tokens are being generated.
+/// - `config`: Application configuration for JWT secrets and lifetimes.
 pub async fn generate_tokens(
     token_type: &str,
     user: User,
     config: &AppConfig,
 ) -> Result<Tokens, JwtError> {
-    let auth = config
-        .auth
-        .as_ref()
-        .expect("AUTH CONFIGURATION IS MISSING!");
+    let auth = config.auth.as_ref().ok_or(JwtError::MissingAuth)?;
 
     let jwt_secret = &auth.jwt_secret;
     let access_expiry = auth.jwt_access_expiration_time_in_hours;
     let session_expiry = auth.jwt_refresh_expiration_time_in_hours;
     let otp_expiry = auth.jwt_one_time_password_lifetime_in_minutes;
 
-    let access_token_expiration = Utc::now()
-        .checked_add_signed(Duration::hours(access_expiry as i64))
-        .unwrap()
-        .timestamp() as usize;
+    let now = Utc::now();
 
-    let refresh_token_expiration = Utc::now()
-        .checked_add_signed(Duration::hours(session_expiry as i64))
-        .unwrap()
-        .timestamp() as usize;
-
-    let otp_token_expiration = Utc::now()
-        .checked_add_signed(Duration::minutes(otp_expiry as i64))
-        .unwrap()
-        .timestamp() as usize;
+    let access_token_expiration = calculate_expiration(now, access_expiry, true)?;
+    let refresh_token_expiration = calculate_expiration(now, session_expiry, true)?;
+    let otp_token_expiration = calculate_expiration(now, otp_expiry, false)?;
 
     match token_type {
         "auth" => {
@@ -65,7 +92,7 @@ pub async fn generate_tokens(
                 id: user.id,
                 email: user.email.clone(),
                 exp: access_token_expiration,
-                iat: Utc::now().timestamp_millis() as usize,
+                iat: Utc::now().timestamp() as usize,
             };
 
             let access_token = encode(
@@ -78,7 +105,7 @@ pub async fn generate_tokens(
                 id: user.id,
                 email: user.email.clone(),
                 exp: refresh_token_expiration,
-                iat: Utc::now().timestamp_millis() as usize,
+                iat: Utc::now().timestamp() as usize,
             };
 
             let refresh_token = encode(
@@ -87,18 +114,11 @@ pub async fn generate_tokens(
                 &EncodingKey::from_secret(jwt_secret.as_bytes()),
             )?;
 
-            let auth_cookie_part_a = match hashing_handler(user.email.as_str()).await {
-                Ok(hash) => hash.to_string(),
-                Err(e) => e.to_string(),
-            };
-
-            let auth_cookie_part_b = match hashing_handler(&jwt_secret).await {
-                Ok(hash) => hash.to_string(),
-                Err(e) => e.to_string(),
-            };
+            let auth_cookie_part_a = hashing_handler(user.email.as_str()).await?;
+            let auth_cookie_part_b = hashing_handler(jwt_secret).await?;
 
             let auth_cookie = format!(
-                "rusty_chat____{ }____{ }",
+                "rusty_chat____{}____{}",
                 auth_cookie_part_a, auth_cookie_part_b
             );
 
@@ -115,7 +135,7 @@ pub async fn generate_tokens(
                 id: user.id,
                 email: user.email.clone(),
                 exp: otp_token_expiration,
-                iat: Utc::now().timestamp_millis() as usize,
+                iat: Utc::now().timestamp() as usize,
             };
 
             let otp_token = encode(
@@ -132,13 +152,29 @@ pub async fn generate_tokens(
             })
         }
 
-        _ => Ok(Tokens {
-            access_token: None,
-            refresh_token: None,
-            one_time_password_token: None,
-            auth_cookie: None,
-        }),
+        token_type => Err(JwtError::InvalidTokenType(token_type.to_string())),
     }
+}
+
+/// Safely calculates expiration timestamp.
+fn calculate_expiration(
+    now: chrono::DateTime<Utc>,
+    amount: u64,
+    is_hours: bool,
+) -> Result<usize, JwtError> {
+    let amount_i64 = i64::try_from(amount)
+        .map_err(|_| JwtError::ExpirationCalculation("Config value too large".into()))?;
+
+    let duration = if is_hours {
+        Duration::try_hours(amount_i64)
+    } else {
+        Duration::try_minutes(amount_i64)
+    }
+    .ok_or_else(|| JwtError::ExpirationCalculation("Duration overflow".into()))?;
+
+    now.checked_add_signed(duration)
+        .ok_or_else(|| JwtError::ExpirationCalculation("Timestamp overflow".into()))
+        .map(|dt| dt.timestamp() as usize)
 }
 
 #[cfg(test)]
@@ -219,11 +255,10 @@ mod tests {
         };
 
         let result = generate_tokens("invalid", user, &config).await;
-        assert!(result.is_ok());
-        let tokens = result.unwrap();
-        assert!(tokens.access_token.is_none());
-        assert!(tokens.refresh_token.is_none());
-        assert!(tokens.auth_cookie.is_none());
-        assert!(tokens.one_time_password_token.is_none());
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            JwtError::InvalidTokenType(t) => assert_eq!(t, "invalid"),
+            _ => panic!("Expected InvalidTokenType error"),
+        }
     }
 }

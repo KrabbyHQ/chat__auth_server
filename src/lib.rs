@@ -1,3 +1,8 @@
+//! # Chat Auth Server Library
+//!
+//! This crate provides the core logic for the authentication server, including
+//! router setup, state management, and middleware integration.
+
 use crate::core::router::auth_routes;
 use crate::middlewares::logging_middleware::logging_middleware;
 use crate::middlewares::request_timeout_middleware::timeout_middleware;
@@ -11,12 +16,21 @@ pub mod db;
 pub mod middlewares;
 pub mod utils;
 
+/// Global application state shared across all routes and middlewares.
 #[derive(Clone, Debug)]
 pub struct AppState {
+    /// Application configuration loaded from TOML and environment variables.
     pub config: Arc<AppConfig>,
+    /// Thread-safe PostgreSQL connection pool.
     pub db: PgPool,
 }
 
+/// Creates the main Axum application router.
+///
+/// This function:
+/// - Nests the authentication routes under `/api/v1/auth`.
+/// - Integrates logging and request timeout middlewares.
+/// - Provides the global `AppState` to all handlers.
 pub fn create_app(state: AppState) -> Router {
     Router::new()
         .nest("/api/v1/auth", auth_routes(&state))
