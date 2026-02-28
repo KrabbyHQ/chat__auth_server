@@ -21,6 +21,8 @@ pub enum JwtError {
     MissingAuth,
     #[error("Invalid token type: {0}")]
     InvalidTokenType(String),
+    #[error("Expiration calculation failed: {0}")]
+    ExpirationCalculation(String),
 }
 
 impl From<argon2::password_hash::Error> for JwtError {
@@ -78,20 +80,11 @@ pub async fn generate_tokens(
     let session_expiry = auth.jwt_refresh_expiration_time_in_hours;
     let otp_expiry = auth.jwt_one_time_password_lifetime_in_minutes;
 
-    let access_token_expiration = Utc::now()
-        .checked_add_signed(Duration::hours(access_expiry as i64))
-        .unwrap()
-        .timestamp() as usize;
+    let now = Utc::now();
 
-    let refresh_token_expiration = Utc::now()
-        .checked_add_signed(Duration::hours(session_expiry as i64))
-        .unwrap()
-        .timestamp() as usize;
-
-    let otp_token_expiration = Utc::now()
-        .checked_add_signed(Duration::minutes(otp_expiry as i64))
-        .unwrap()
-        .timestamp() as usize;
+    let access_token_expiration = calculate_expiration(now, access_expiry, true)?;
+    let refresh_token_expiration = calculate_expiration(now, session_expiry, true)?;
+    let otp_token_expiration = calculate_expiration(now, otp_expiry, false)?;
 
     match token_type {
         "auth" => {
@@ -161,6 +154,27 @@ pub async fn generate_tokens(
 
         token_type => Err(JwtError::InvalidTokenType(token_type.to_string())),
     }
+}
+
+/// Safely calculates expiration timestamp.
+fn calculate_expiration(
+    now: chrono::DateTime<Utc>,
+    amount: u64,
+    is_hours: bool,
+) -> Result<usize, JwtError> {
+    let amount_i64 = i64::try_from(amount)
+        .map_err(|_| JwtError::ExpirationCalculation("Config value too large".into()))?;
+
+    let duration = if is_hours {
+        Duration::try_hours(amount_i64)
+    } else {
+        Duration::try_minutes(amount_i64)
+    }
+    .ok_or_else(|| JwtError::ExpirationCalculation("Duration overflow".into()))?;
+
+    now.checked_add_signed(duration)
+        .ok_or_else(|| JwtError::ExpirationCalculation("Timestamp overflow".into()))
+        .map(|dt| dt.timestamp() as usize)
 }
 
 #[cfg(test)]
