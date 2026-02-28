@@ -22,13 +22,13 @@ This repository contains the AUTH REST API layer/service for the Krabby `chat` i
 
 ### 1. Core Prerequisites
 
-- [Rust](https://www.rust-lang.org/tools/install) (latest stable)
+- [Rust](https://www.rust-lang.org/tools/install)(latest stable)
 
-- [Docker](https://www.docker.com/) (for database)
+- [Docker](https://www.docker.com/) 
 
-- [sqlx-cli](https://github.com/launchbadge/sqlx/tree/main/sqlx-cli) (`cargo install sqlx-cli`)
+- [sqlx-cli](https://github.com/launchbadge/sqlx/tree/main/sqlx-cli)(`cargo install sqlx-cli`)
 
-- [Node.js](https://nodejs.org/en/download/) and [Bun](https://bun.sh/) (for contribution standards enforcement)
+- [Node.js](https://nodejs.org/en/download/)(and [Bun](https://bun.sh/)) - for contribution standards enforcement)
 
 ### 2. Database Setup
 
@@ -100,7 +100,7 @@ cargo dev
 
 Based on previous research, the Rust ecosystem lacks a very robust/mature and fully integrated solution for enforcing code contribution standards, such as conventional commits, pre-commit hooks, and automated linting checks. 
 
-By leveraging non-rust packages like `Husky` and `Commitlint`, the project gains a comprehensive cross-language workflow that ensures:
+By leveraging non-rust packages like `Husky` and `Commitlint` from `Node.js`, the project gains a comprehensive cross-language workflow that ensures:
 
 - Standardized commit messages across all contributors
 
@@ -121,10 +121,10 @@ To integrate the `Husky` and `Commitlint` setup into your current Rust workflow:
 git pull origin main
 ```
 
-2. Install the new packages with Bun and ensure Husky is properly initialized:
+2. Install the new packages with Bun:
 
 ```shell
-bun install && husky init
+bun install
 ```
 
 ## Project Config Setup
@@ -176,7 +176,7 @@ The `validate()` method ensures the following sections are correctly populated a
 
 The project uses several `.env` files to manage environment-specific configurations. 
 
-- `.env`: The default environment file containing shared variables or the primary `APP__ENV` setting.
+- `.env`: The default environment file. It's only current function is controlling environment selection for the project.
 
 - `.env.development`: Contains configuration overrides specifically for local development.
 
@@ -184,7 +184,7 @@ The project uses several `.env` files to manage environment-specific configurati
 
 - `.env.production`: Contains sensitive production-only credentials and settings.
 
-> **Note:** Do not share real `.env` files (especially production). Use a sanitized `.env.example` for required keys and retrieve real secrets through the approved secret-management process.
+> **Note:** Retrieve real secrets through the approved secret-management process.
 
 ## Testing
 
@@ -220,11 +220,23 @@ cargo test --test '*'
 
 ### 3. How to add new tests
 
-- **Unit Tests**: Add a `#[cfg(test)] mod tests { ... }` block at the end of your module.
+- **Unit Tests**: Add a `#[cfg(test)]` block and the required test(s) - all contained within a `mod tests` block - at the end of your module.
+
+E.g.
+
+```rust
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_something() {
+        assert!(true);
+    }
+}
+```
 
 - **Integration Tests**: 
 
-  1. Create a new file in `tests`.
+  1. Create a new file in the `tests` directory contained on the root of the project.
 
   2. Use `common::setup_test_server().await` to get a `TestServer` instance.
 
@@ -246,12 +258,10 @@ The application implements logging through multiple layers to ensure full visibi
 
 > This prevents the need to manually register logs if no errors/issues are encountered on a request.
 
-2. **In-Process Logic Logs**: Granular logs emitted directly from within the application logic (e.g., during errors) using the `tracing` crate to capture specific runtime context.
+2. **In-Process Logic Logs**: Granular logs emitted directly from within the application logic (e.g., during errors) to capture specific runtime context.
 
 ## Operating System Notes (WSL)
 
 If you are developing on **WSL**, file system events might not trigger `cargo watch`. The project's `cargo dev` alias is pre-configured to use `--poll` if needed. 
-
-Ensure your `APP__ENV`(in `.env`) is set to `development` to pick up the correct local database settings.
 
 Cheers!!! 🍻
