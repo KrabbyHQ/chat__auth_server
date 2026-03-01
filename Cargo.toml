@@ -6,7 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0.102"
 argon2 = "0.5.3"
-axum = "0.8.8"
+axum = "0.8"
 chrono = { version = "0.4.44", features = ["serde", "clock"] }
 config = "0.15.19"
 dotenvy = "0.15.7"
@@ -23,6 +23,9 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["fmt", "json", "time"] }
 url = "2.5.8"
 uuid = { version = "1.21.0", features = ["v4"] }
+utoipa = { version = "5.4.0", features = ["chrono","axum_extras"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+
 [dev-dependencies]
 axum-test = "18.7.0"
 tokio = { version = "1.49.0", features = ["full", "macros"] }

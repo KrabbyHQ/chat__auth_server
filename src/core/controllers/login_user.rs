@@ -2,6 +2,7 @@ use crate::utils::generate_tokens::{User, generate_tokens};
 use axum::extract::State;
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 // utils import
 use crate::AppState;
 use crate::utils::cookie_deploy_handler::deploy_auth_cookie;
@@ -10,7 +11,7 @@ use chrono::NaiveDateTime;
 use tower_cookies::Cookies;
 use tracing::error;
 
-#[derive(Debug, Serialize, sqlx::FromRow)]
+#[derive(Debug, Serialize, sqlx::FromRow, ToSchema)]
 pub struct UserProfile {
     // #[sqlx(rename = "id")]
     id: i64,
@@ -29,20 +30,20 @@ pub struct UserProfile {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ResponseCore {
     user_profile: UserProfile,
     access_token: Option<String>,
     refresh_token: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct LoginRequest {
     email: String,
     password: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct LoginResponse {
     response_message: String,
     response: Option<ResponseCore>,
@@ -50,6 +51,16 @@ pub struct LoginResponse {
 }
 
 // Reuse UserProfile and ResponseCore from register controller
+
+#[utoipa::path(
+    post,
+    path = "/login",
+    responses(
+        (status = 200, description = "Login successful", body = LoginResponse),
+        (status = 401, description = "Invalid email or password", body = LoginResponse),
+        (status = 500, description = "Login failed", body = LoginResponse),
+    )
+)]
 
 pub async fn login_user(
     cookies: Cookies,

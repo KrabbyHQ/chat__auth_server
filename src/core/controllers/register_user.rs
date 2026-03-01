@@ -9,8 +9,9 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use tower_cookies::Cookies;
 use tracing::error;
+use utoipa::ToSchema;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct InSpecs {
     first_name: String,
     last_name: String,
@@ -20,7 +21,7 @@ pub struct InSpecs {
     phone_number: String,
 }
 
-#[derive(Debug, Serialize, sqlx::FromRow)]
+#[derive(Debug, Serialize, sqlx::FromRow, ToSchema)]
 pub struct UserProfile {
     id: i64,
     full_name: String,
@@ -40,7 +41,7 @@ pub struct UserLookUp {
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct ResponseCore {
     user_profile: UserProfile,
     access_token: Option<String>,
@@ -48,12 +49,22 @@ pub struct ResponseCore {
 }
 
 // ====== Response Data ======
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct RegisterResponse {
     response_message: String,
     response: Option<ResponseCore>,
     error: Option<String>,
 }
+
+#[utoipa::path(
+    post,
+    path = "/register",
+    responses(
+         (status = 201, description = "User with email 'a@yahoo.com' registered successfully!", body = RegisterResponse),
+        (status = 403, description = "Registration failed, Email already exists", body = RegisterResponse),
+        (status = 500, description = "Registration failed or Token generation failure", body = RegisterResponse),
+    )
+)]
 
 pub async fn register_user(
     cookies: Cookies,
