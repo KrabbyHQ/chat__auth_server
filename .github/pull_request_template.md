@@ -6,7 +6,7 @@ All PR Titles must follow the [Conventional Commit](https://www.conventionalcomm
 
 E.g. `feat(auth): add password reset functionality`
 
-For branch naming, see the 'Your First Code/Documentation Contribution' section of our [CONTRIBUTING.md](CONTRIBUTING.md) file.
+For branch naming, see the 'Your First Code/Documentation Contribution' section of our [CONTRIBUTING.md](../CONTRIBUTING.md) file.
 
 ## Section 2: PR Body
 
