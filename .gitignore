@@ -4,9 +4,7 @@
 .env.development
 .env.production
 .env.staging
-.env.template
 .env
-.env*
 
 # extras
 .idea
