@@ -1,6 +1,6 @@
 # Krabby Chat Auth Server
 
-[![CI](https://github.com/okpainmo/chat__auth_server/actions/workflows/ci.yml/badge.svg)](https://github.com/okpainmo/chat__auth_server/actions/workflows/ci.yml)
+[![CI](https://github.com/KrabbyHQ/chat__auth_server/actions/workflows/ci.yml/badge.svg)](https://github.com/KrabbyHQ/chat__auth_server/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
