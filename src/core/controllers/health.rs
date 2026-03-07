@@ -1,4 +1,4 @@
-use axum::{Json, Router, routing::get};
+use axum::Json;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
