@@ -2,17 +2,13 @@ use crate::AppState;
 use crate::core::controllers::health::health;
 use crate::core::controllers::login_user::login_user;
 use crate::core::controllers::logout_user::logout_user;
-use crate::core::controllers::open_api_docs::ApiDoc;
+
 use crate::core::controllers::register_user::register_user;
 use axum::{Router, routing::get, routing::post};
 use tower_cookies::CookieManagerLayer;
 
-use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
-
 pub fn auth_routes(_state: &AppState) -> Router<AppState> {
     Router::new()
-        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/health", get(health))
         .route("/register", post(register_user))
         .route("/login", post(login_user))
