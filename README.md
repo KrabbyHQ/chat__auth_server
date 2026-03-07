@@ -1,4 +1,10 @@
-# Krabby Chat Auth Server.
+# Krabby Chat Auth Server
+
+[![CI](https://github.com/KrabbyHQ/chat__auth_server/actions/workflows/ci.yml/badge.svg)](https://github.com/KrabbyHQ/chat__auth_server/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 This repository contains the AUTH REST API layer/service for the Krabby `chat` implementation.
 
@@ -174,9 +180,19 @@ The `validate()` method ensures the following sections are correctly populated a
 
 ## Environment Variables Files
 
-The project uses several `.env` files to manage environment-specific configurations. 
+The project uses several `.env` files to manage environment-specific configurations. To assist in setting up your local environment, we provide several **`.sample`** versions within the project root.
 
-- `.env`: The default environment file. It's only current function is controlling environment selection for the project.
+### Setting up your environment
+
+To get started, you should remove the **`.sample`** extension from the end of the sample files to create the active configuration files.
+
+E.g.
+- Duplicate `.env.sample` and rename it to `.env`.
+- Duplicate `.env.development.sample` and rename it to `.env.development`.
+
+### Available Files:
+
+- `.env`: The default environment file. Its only current function is controlling environment selection for the project.
 
 - `.env.development`: Contains configuration overrides specifically for local development.
 
@@ -184,7 +200,7 @@ The project uses several `.env` files to manage environment-specific configurati
 
 - `.env.production`: Contains sensitive production-only credentials and settings.
 
-> **Note:** Retrieve real secrets through the approved secret-management process.
+> **Note:** Retrieve real secrets through the approved secret-management process and never commit real `.env` files to source control.
 
 ## Testing
 
@@ -263,5 +279,23 @@ The application implements logging through multiple layers to ensure full visibi
 ## Operating System Notes (WSL)
 
 If you are developing on **WSL**, file system events might not trigger `cargo watch`. The project's `cargo dev` alias is pre-configured to use `--poll` if needed. 
+
+## Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+Please check our [Contributing Guidelines](CONTRIBUTING.md) to get started.
+
+### Code of Conduct
+
+We are committed to providing a friendly, safe and welcoming environment for all. Please see our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+If you discover any security-related issues, please refer to our [Security Policy](SECURITY.md) instead of using the issue tracker.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 Cheers!!! 🍻

@@ -2,6 +2,10 @@
 name = "chat_auth_server"
 version = "0.1.0"
 edition = "2024"
+description = "Authentication REST API service for the Krabby core chat implementation"
+repository = "https://github.com/KrabbyHQ/chat__auth_server"
+homepage = "https://github.com/KrabbyHQ/chat__auth_server"
+license = "MIT"
 
 [dependencies]
 anyhow = "1.0.102"
