@@ -5,20 +5,21 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use tower_cookies::{Cookie, Cookies};
 use tracing::error;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct LogoutResponse {
     response_message: String,
     response: Option<UserProfile>,
     error: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct SearchParams {
     user_email: String,
 }
 
-#[derive(Debug, Serialize, sqlx::FromRow)]
+#[derive(Debug, Serialize, sqlx::FromRow, ToSchema)]
 pub struct UserProfile {
     id: i64,
     full_name: String,
@@ -34,6 +35,15 @@ pub struct UserProfile {
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
+
+#[utoipa::path(
+    post,
+    path = "/logout",
+    responses(
+        (status = 200, description = "Logout successful", body = LogoutResponse),
+        (status = 500, description = "Logout failed", body = LogoutResponse),
+    )
+)]
 
 pub async fn logout_user(
     State(state): State<AppState>,

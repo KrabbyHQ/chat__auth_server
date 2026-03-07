@@ -2,7 +2,7 @@
 //!
 //! This crate provides the core logic for the authentication server, including
 //! router setup, state management, and middleware integration.
-
+use crate::core::controllers::open_api_docs::ApiDoc;
 use crate::core::router::auth_routes;
 use crate::middlewares::logging_middleware::logging_middleware;
 use crate::middlewares::request_timeout_middleware::timeout_middleware;
@@ -10,6 +10,9 @@ use crate::utils::load_config::AppConfig;
 use axum::{Router, middleware};
 use sqlx::PgPool;
 use std::sync::Arc;
+
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 pub mod core;
 pub mod db;
@@ -33,6 +36,7 @@ pub struct AppState {
 /// - Provides the global `AppState` to all handlers.
 pub fn create_app(state: AppState) -> Router {
     Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .nest("/api/v1/auth", auth_routes(&state))
         .layer(middleware::from_fn(logging_middleware))
         .layer(middleware::from_fn_with_state(
